@@ -1,0 +1,136 @@
+---
+title: 'STAT 428: Homework 1: <br> Testing Rmd and homework submission'
+author: "Fu, Xingyu, xingyuf2 <br> Collaborated with: Zhang, Jieyu, jieyuz2"
+date: "Due Week 3 Saturday, September 15 by 11.59 PM on Compass"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+ 
+## Solution 1:
+I followed task listed in Exercise 1
+
+## Solution 2: 
+1. I'm in CS major.
+I enjoy doing researches.
+
+2. **I'm in CS major.** <br>
+<br>
+_I enjoy doing researches._
+
+3. [My favorite website](https://www.github.com/); https://www.github.com/
+
+4. \#
+
+5.
+>+ Girlfriend: Our love is like a Poisson distribution, rare and special. Out of all the men in the world, we found each other.
+>+ Boyfriend: Hmm, I think I'd describe it more like a geometric distribution. I failed with all the other women in our class but I knew there would eventually be a success...you!
+
+6. 
+```{message = FALSE, warning = FALSE}
+2+3
+```
+
+7. 
+* It's major requirement.
+* It learns stat knowledge.
+* It uses R.
+
+8.
+  1) It uses R. 
+  2) Exams.
+  3) Homeworks.
+
+9. ![](Hypergeometric.png)
+
+10. 
+```{}
+![](Hypergeometric.png){width=75px}
+```
+![](Hypergeometric.png){width=75px}
+
+11. 
+* A
+```{r, A, echo = FALSE}
+2+3
+```
+* B
+```{r, B, eval=FALSE}
+2+3
+```
+* C
+```{r, C,  echo=FALSE, eval = FALSE, include=FALSE }
+2+3
+```
+
+12. $L(\theta)=\prod_{i=1}^{n} \theta^{x_i}(1-\theta)^{(1-x_i)}$.
+
+13. R is difficult.
+
+## Solution 3: 
+1. **True**
+2. **False**
+3. **False**
+4. **False**
+
+
+## Solution 4:
+a.
+```{r}
+regions <- levels(state.region)
+longest <- regions[nchar(regions)==max(nchar(regions))]
+longest
+nchar(longest[1])
+```
+
+b.
+```{r}
+regions <- levels(state.region)
+states <- sapply(strsplit(regions, " "), function(x) length(x) > 1)
+regions[states]
+sum(states)
+```
+
+c.
+```{r}
+sum(state.region == "Northeast")
+```
+
+d.
+```{r}
+sapply(levels(state.region), function(x) gsub("S|s", 'Z', x))
+```
+
+
+## Solution 5
+a.
+```{r}
+illiteracy <- as.vector(state.x77[, 3])
+illiteracy
+```
+
+b.
+```{r}
+mean(as.vector(state.x77[, 3]))
+```
+
+c.
+```{r}
+states <- state.name[state.region == "North Central"]
+mean(as.vector(state.x77[states, 3]))
+```
+
+d.
+```{r}
+lowest <- state.name[state.x77[, 3] == min(state.x77[, 3])]
+lowest
+print(state.region[sapply(state.name, function(x) is.element(x, lowest))], max.levels=0)
+```

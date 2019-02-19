@@ -1,0 +1,272 @@
+---
+title: 'STAT 428: Homework 3: <br> Chapter 3 and Chapters 5 Monte Carlo Methods'
+author: "Fu, Xingyu, xingyuf2 <br> Collaborated with: Zhang, Jieyu, jieyuz2"
+date: "Due Week 6 Saturday, October 6 by 11.59 PM on Compass"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+---------------------------------------
+
+Please refer to the [**detailed homework policy document**](https://compass2g.illinois.edu/bbcswebdav/pid-3348982-dt-content-rid-35374883_1/courses/stat_428_120188_166591/1_Info/Syllabus/homework_policy.html) on Course Page for information about homework formatting, submission, and grading. 
+
+---------------------------------------
+
+## Solution 1 
+**Sampling via special transformation.**
+
+**(a)** Suppose we can only sample from $Unif[0,1]$. $k=3$. Design an algorithm to simulate $\chi^2$ distribution with $2k$ freedom via general transformation method. _(Hint: Consider the connection between the sum of $k$ exponential distributed random variables and chi-squared distributed random variable.)_
+
+**Algorith**: We simulate $\chi^2$ distribution with $2k$ freedom via general transformation method. <br> We know that $\chi^2(2k)$ distribution is same as gamma(k, 2), which is equal to sum of k iid Exp(2).
+So we can first generate k iid Exponential distributions Exp(2) from uniform distribution U ~ Unif(0, 1) by equation: −2log(U)∼Exp(2). Then add the k iid distributions together to get $\chi^2(2k)$ distribution.<br> I illustrate with R-code as below. 
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+k <- 3
+u <- runif(k)             # k uniforms
+x <- -2 * log(u)      # k Exp(2)s
+y <- sum(x)               # a gamma(k, 2) = chi^2(2k), the required distribution
+```
+
+**(b)** Write an R code to generate sample following chi-squared distribution based on your designed algorithm in the previous part, with $n=2000$ sample size. Then, estimate expected value of this chi-squared distribution. Check if your estimates match the theoretically expected value of chi-squared distribution or not.
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+chi_squared <- rep(0, 2000)
+n <- 2000     #sample size
+for (i in 1:n) {
+  chi_squared[i] <- sum(-2*log(runif(3)))   # Generate a sample from distribution chi^2(2k), where k=3, using the above algorithm
+}
+estimate_expectation <- mean(chi_squared)   # take mean of the 2000 samples
+expectation <- 2*3     # theoretical expected value is 2*k, here k=3
+estimate_expectation
+expectation
+```
+
+## Solution 2
+**Monte Carlo Integration.** Use Monte Carlo integration to estimate
+
+**(a)** $$\int_{0}^{2} sin(x^2) dx$$
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x <- runif(10000, 0, 2)   #by monte carlo, get random x from unif(0, 2)
+(estimate <- 2 * mean(sin(x**2)))
+```
+**(b)** $$\int_{0}^{1}\int_{0}^{1} e^{-(x+y)^3}(x+y) dx dy$$
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x <- runif(10000)    #by monte carlo, get random x from unif(0, 1)
+y <- runif(10000)    #by monte carlo, get random y from unif(0, 1)
+(estimate <- mean(exp(-(x + y)**3) * (x + y)))
+```
+
+**(c)** $$\int_{0}^{5}\int_{0}^{2} e^{-(x+y)^3}(x+y) dx dy$$
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x <- runif(10000, 0, 2) #by monte carlo, get random x from unif(0, 2)
+y <- runif(10000, 0, 5)    #by monte carlo, get random y from unif(0, 5)
+(estimate <- 10 * mean(exp(-(x + y)**3) * (x + y)))
+```
+
+## Solution 3:
+**A "potential" interview question**
+
+Let Y1 ~ N(-1,1) and Y2 ~ N(1,1). Let Y be a normal mixture distribution where Y = (0.5 * Y1) + (0.5 * Y2). Suppose I wish to sample from Y. Write an acceptance-rejection algorithm that accomplishes this by sampling through a Cauchy Distribution (instrumental).
+
+a) Implement this algorithm and generate 20000 random samples.
+
+By given information, along with Cauchy(0, 1), we get M = $(1 + e^{-2})\sqrt{2\pi}$ at x = 1 or -1. 
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+# Simulating Normal mixture distribution Y ~ N(0, 1/2) with a Cauchy Distribution
+randnorm <- function(n){
+  M <- 2.8458635 # bound used in A/R algo
+  i <- 0; N <- 0 # init and storage
+  z <- rep(0, times = n)
+  while(i < n){ # keep going until n accepts
+      x <- tan(pi*(runif(1) - 0.5))  # simulate a Cauchy
+      u <- runif(1)                  # simulate a Uniform
+      if(runif(1) <= 0.5){   # compute f(x) = Y
+        f = dnorm(x, -1, 1)
+      } else{
+        f = dnorm(x, 1, 1)
+      }
+      g <- 1/pi/(1+x^2)  # compute g(x) = Cauchy(0, 1)
+      
+      if (u <= f/M/g){ # got another accept
+        i <- i + 1
+        z[i] <- x # save this one
+      }
+      N <- N + 1 # keep track of num trials
+    }
+list(z = z, accept = n/N) # variates and percent accepted
+}
+tmp <- randnorm(20000)
+cat('Percent accepted =',tmp$accept)        #percent accepted
+```
+
+b) Output a histogram of these samples and overlay the density of the original distribution.
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+hist(tmp$z,freq=F,col="red",breaks=50)
+x=seq(-4,4,.1)
+lines(x, (exp(-(x-1)^2/2)/sqrt(2*pi) + exp(-(x+1)^2/2)/sqrt(2*pi))/2)
+```
+
+## Solution 4
+**Variance reduction in Monte Carlo Integration: Importance Sampling.** 
+Let us consider the simple integral $$ \int_0^1 e^x \; dx. $$
+Note that we can write any integral as
+$$ \int_0^1 f(x) \; dx = \int_0^1 \frac{f(x)}{g(x)} \; g(x) \; dx = E \left[ \frac{f(X)}{g(X)} \right], $$ where the last expectation is taken over the reference distribution $g$. We have $f(x) = e^x$ for our problem. I propose the following reference distribution, $g(x) = (1 + \alpha) x^\alpha, \; 0 \le x \le 1$ with $\alpha = 1.5$. This is sometimes refererred to as the power-law distribution.
+
+**(a)** Use Monte Carlo integration with $k = 1000$ iterations to approximate the integral $ \int_0^1 e^x \; dx. $. Call this approximate value $I_1$.
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+u = runif(1000)
+(I_1 = mean(exp(u)))
+```
+
+**(b)** Describe an inverse transform algorithm to sample from the proposed distribution $g(x)$.
+
+**Algorithm**: We get CDF of g(x), then calculate the inverse CDF. Finally plug in value sampled from Unif(0,1) to get sample from g(x).
+
+**(c)** Implmement your algorithm to get 1000 samples from $g(x)$, $(X_1, X_2, \ldots, X_{1000})$.
+
+We know that $g(x) = (1 + \alpha) x^\alpha, \; 0 \le x \le 1$ with $\alpha = 1.5$<br> So $F(x) = t^{\alpha + 1}, \; 0 \le x \le 1$, and $F(x) = 1, \; t > 1 $, and $F(x) = 0, \;t < 0$.
+So $F^{-1}(t) = t^{1/(\alpha + 1)}, \; 0 \le x \le 1$. Therefore, we can sample $u$ from Unif(0, 1), then output $F^{-1}(u)$ as a sample from $g(x)$. 
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+alpha <- 1.5
+X <- runif(1000)^(1 / (alpha + 1))
+```
+
+**(d)** Compute the quantity $I_2 = \frac{1}{1000} \sum_{i=1}^{1000} \frac{f(X_i)}{g(X_i)} $ for your sample from part (b). What is this quantity $I_2$ as estimate of? Compare it with $I_1$ from Part (a).
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+(I_2 <- mean(exp(X)/((1 + alpha) * X^alpha)))
+(I_2 - I_1)
+```
+They differ a bit.
+
+## Solution 5
+**Prediction of closing prices**
+Suggested by Black-Scholes model (Black and Scholes (1973)),  Normal distribution is commonly used to model the equity prices in mathematical finance. Specifically, people assume that the logarithm of stock return follows normal distribution independently:
+\[\log(S(t))/S(t-1)) \sim Normal(0,v),\]
+where $S(t)$ is assumed to be the closing price at day $t$, and $v$ is the variance of the logarithm of stock return.
+
+Now, we assume a stock starting price (price at day $0$) $S(0)=20$ and the variance of logrithnm stock return $v=0.0009$.
+
+1. Simulate a sample path of stock price $S(t)$ for 20 days and plot it with line type. (with R code)
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+set.seed(2018)
+variance <- 0.0009
+n = 20  #days
+S <- rep(0, times = n)  #stock prices
+S0 = 20
+for (i in 1:n){ # keep going until n days
+  if (i==1){
+    S[i] = S0 * exp(rnorm(1, 0, sd=sqrt(variance)))
+  }else{
+    S[i] = S[i-1] * exp(rnorm(1, 0, sd=sqrt(variance)))
+  }
+}
+plot(S,type='l',main='Simulated stock price',ylab='stock price',xlab='day')
+```
+
+2. Estimate the expected closing price at day $20$: $E(S(20))$ based on $100000$ sample path. Meanwhile, report its upper and lower 95th percentiles.
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+set.seed(2018)
+S <- rep(0, times = 20)  #stock prices
+price=integer(0)
+for (path in 1:100000){
+  for (i in 1:20){ # keep going until n days
+    if (i==1){
+      S[i] = 20 * exp(rnorm(1, 0, sd=sqrt(0.0009)))
+    }else{
+      S[i] = S[i-1] * exp(rnorm(1, 0, sd=sqrt(0.0009)))
+    }
+  }
+  price=c(price,S[20])
+}
+mean(price) # expected closing price at day 20
+quantile(price, c(.05, .95)) #upper and lower percentile 
+```
+
+## Solution 6 - 10
+Do the following problems from the book  5.1, 5.3, 5.4, 5.13, 5.14.
+
+## Solution 6 (5.1)
+
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+u <- runif(1000, 0, pi/3)
+(estimate <- (pi/3) * mean(sin(u)))
+(exact <- integrate(sin, lower = 0, upper = pi/3))
+```
+
+## Solution 7 (5.3)
+
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+N <- 10000
+u <- runif(N,0,0.5)
+(theta_h <- 0.5*mean(exp(-u))) # monte carlo estimate theta hat 
+(theta_h_var <- 0.25*var(exp(-u))/N)  #variance of theta hat
+
+X <- rexp(N,1)
+(theta_s <- mean(ifelse(X < 0.5, 1, 0))) #mean of theta star
+(theta_s_var <- var(ifelse(X < 0.5, 1, 0)) / N)  #variance of theta star
+```
+$\hat{\theta}$ has smaller variance. It's because that even though exp(1) matches the shape of the original function better compared with Unif(0, 1), it is supported on an infinite set and will result in many more 0 values than Unif(0, 1).
+
+## Solution 8 (5.4)
+
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+formula <- function(x) {
+  x^2 * (1-x)^2
+}
+beta <- function(x){
+  if (x <= 0) {return(0)}
+  if (x >= 1) {return(1)}
+  c <- 1/integrate(formula, 0, 1)$val
+  u <- runif(2000, 0, x)
+  ret <- x * c * mean(formula(u))
+  return(ret)
+}
+x <- seq(0.1, 0.9, 0.1)
+cdf <- numeric(9)
+for (i in 1:9) {
+  cdf[i] <- beta(x[i])
+}
+true_cdf <- pbeta(x,3,3)
+
+print(round(rbind(x, cdf, true_cdf), 3))
+```
+
+## Solution 9 (5.13)
+We find two importance functions $$f_1(x) = e^{-x}, \; x > 1$$ and $$f_2(x) = x^2e^{-x}, \; x > 1$$ for $$g(x) = \frac{x^2e^{-x^2/2}}{\sqrt{2\pi}}, \; x > 1$$. The variance is determined by $$\int_1^\infty \frac{g(x)^2}{f(x)} \; dx $$. Integrate for both functions, I get Var_f1=0.503736, Var_f2=0.184497. So the second importance function produces the smaller variance.
+
+## Exercise 9 (5.14)
+I use $y = 1/x$ here. So $$\int_1^\infty \frac{x^2e^{-x^2/2}}{\sqrt{2\pi}} \; dx = \int_0^1 \frac{e^{-1/2y^2}}{\sqrt{2\pi}y^4} \; dy$$ And I use $f_1(x)= e^{-x}$ to do importance sampling for simplicity. 
+```{r,  eval=TRUE, echo=TRUE, include=TRUE}
+(target <- integrate(function(x){x^2 * exp(-x^2 / 2) / sqrt(2 * pi)}, 1, Inf)$val)
+m <- 1000 #iterations
+gf=function(x) {
+  if (x < 0 ) {return(0)}
+  else if (x > 1) {return(0)}
+  g=exp(-1/(2*x^2)) / (sqrt(2 * pi)*x^4)
+  #f=(x>0)(x<1)
+  return (g)
+}
+
+# f
+iter <- 0
+x <- rep(0, m)
+while (iter < m) {
+  ex <- rexp(1)
+  x[iter] <- gf(ex)
+  iter <- iter + 1
+}
+gfphi=x/exp(-x)
+(estimate=mean(gfphi))
+(var=var(gfphi)/m)
+```
+

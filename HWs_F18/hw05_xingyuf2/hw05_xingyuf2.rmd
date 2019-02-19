@@ -1,0 +1,278 @@
+---
+title: 'STAT 428: Homework 5: <br> Chapter 7: Jackknife and Bootstrap'
+author: "Fu, Xingyu, xingyuf2 <br>"
+date: "Due Week 11 Saturday, November 10 by 11.59 PM on Compass"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+---------------------------------------
+
+Please refer to the [**detailed homework policy document**](https://compass2g.illinois.edu/bbcswebdav/pid-3348982-dt-content-rid-35374883_1/courses/stat_428_120188_166591/1_Info/Syllabus/homework_policy.html) on Course Page for information about homework formatting, submission, and grading. Additional policies:
+
+1. Whenever you are asked about an algorithm or a code implementing such, you have to either explain the algorithm clearly in steps or provide detailed documentation/comments on your R code explaining what you are doing. This is to ensure we fully understand what your code is trying to achieve since it can be hard to depict codes sometimes.
+
+2. When using an R code chunk in the RmD with {r}, please use {r,eval=TRUE, echo=TRUE, include=TRUE} instead so that your chunk and results show in the html. This is just to help us grade faster.
+
+3. When using external packages, please mention clearly what R packages you are using so that we can install those when running your codes. Furthermore, please call the package in your code using the "library" function so that your code shows no error when running.
+
+---------------------------------------
+
+## Exercise 1
+**Bootstrap.**
+
+Perform the following tasks:
+
+  1. Generate a sample of size 100 from `Beta(3,2)` distribution.
+  
+  2. Estimate the mean of `Beta(3,2)` distribution based on this sample.
+  
+  3. Use Bootstrap to estimate the standard error of this mean.
+  
+  4. What should be (theoretically) and is (practically according to your experiment) the relation between this Bootstrap estimate and the actual standard deviation of the distribution you sampled from?
+  
+  5. Calculate a 95\% confidence interval for the estimate of mean (based on bootstrap).
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+# 1. Generate a sample of size 100 from `Beta(3,2)` distribution.
+n <- 100
+x <- rbeta(n, 3, 2, ncp = 0)
+
+# 2. Estimate the mean of `Beta(3,2)` distribution based on this sample.
+(m <- mean(x))
+
+# 3. Use Bootstrap to estimate the standard error of this mean.
+B <- 10000
+Tboot <- numeric(B)
+for (b in 1 : B) {
+  xb <- sample(x, n, replace=TRUE)
+  Tboot[b] <- mean(xb)
+}
+(se <- sd(Tboot))
+
+# 4 Theoretical standard deviation
+beta_sd <- 1 / 5
+(se_theory <- beta_sd / sqrt(n))
+
+# 5
+zval <- qnorm(.975)
+(lower <- m - zval * se)
+(upper <- m + zval * se)
+```
+2. Estimation of mean is `r m`  
+3. Estimation of the standard error of mean is `r se`  
+4. Theoretically, we get the bootstrap by $\frac{beta-sd}{\sqrt{n}}$ = `r se_theory`, where beta-sd is actual standard deviation of the distribution. In practical, we get estimate = `r se`. They are close.  
+5. Confidence Interval: (`r lower`, `r upper`)
+
+## Exercise 2
+**Jackknife.**
+
+  a) Write an R function called `jackknife_sd`. The function should accept 1 argument: $x$ (the data). The function `jackkife_sd` should return a list with the following components:
+
+  * bias - the jacknife estimate of the bias of the sample standard deviation
+  * se - the jacknife estimate of standard error of the sample standard deviation
+  
+  (Please make sure your function is shown in the html file) 
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+jackknife_sd=function(x){
+  n=length(x)
+  jack_sample=numeric(n)
+  for (i in 1:n){
+    jack_sample[i]=sd(x[-i])
+  }
+  #bias
+  bias_jack=(n-1)*(mean(jack_sample)-sd(x))
+  se_jack=sqrt((n-1) * mean((jack_sample - mean(jack_sample))^2))
+  return (c(bias_jack,se_jack))
+}
+```
+  b) Generate a random standard normal vector of length 1000. Use your `jackknife_sd` function to find the jackknife estimate of bias and standard error for the sample sd.
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x <- rnorm(1000, mean = 0, sd = 1)
+v <- jackknife_sd(x)
+(v)
+```
+The jackknife estimate of bias and standard error for the sample sd are `r v`.
+
+## Exercise 3-8
+Do the following problems from the book: 7.1, 7.2, 7.5, 7.6, 7.7, 7.11.
+
+## Exercise 7.1
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+# get data
+library(bootstrap)
+data(law)
+LSAT <- law$LSAT
+GPA <- law$GPA
+n <- nrow(law)
+# Jackknife method
+jack_sample <- numeric(n)
+for (i in 1:n){
+  jack_sample[i] <- cor(LSAT[-i],GPA[-i])
+}
+# get bias and se
+(bias <- (n - 1) * (mean(jack_sample) - cor(LSAT,GPA)))
+(se <- sqrt((n-1) * mean((jack_sample - mean(jack_sample))^2)))
+```
+A jackknife estimate of the bias of the correlation statistic for the law data in the bootstrap package is `r bias` and that of the standard error is `r se`.
+
+## Exercise 7.2
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+# get data
+library(bootstrap)
+data(law)
+LSAT <- law$LSAT
+GPA <- law$GPA
+ #bootstrap
+n <- nrow(law)
+B <- 10000
+ids <- matrix(0, nrow = B, ncol = n)
+theta <- numeric(B)
+for (b in 1:B) {
+  i <- sample(1:n, size = n, replace = TRUE)
+  theta[b] <- cor(LSAT[i], GPA[i])
+  ids[b, ] <- i # save the ids for the jackknife
+}
+jack_sample <- numeric(n)
+for (i in 1:n) {
+  idx <- (1:B)[apply(ids, MARGIN = 1, FUN = function(k) {!any(k == i)})] # omit all samples with x[i] in i-th iteration
+  jack_sample[i] <- sd(theta[idx])
+}
+# get standard error of se(R)
+(se <- sqrt((n-1) * mean((jack_sample - mean(jack_sample))^2)))
+```
+The estimation of the standard error of the bootstrap estimate of se(R) is `r se`
+
+## Exercise 7.5
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+library(boot)
+x=c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
+# maximum likelihood estimator of lambda:
+(ml=1/mean(x))
+
+###bootstrap standard deviation estimate:
+theta <- function(data, id) {
+  x = data[id, 1]
+  y = data[id, 2]
+  return (sum(y)/(length(x)))
+}
+data = cbind(x, x)
+(boot.obj = boot(data, statistic = theta, R = 10000))
+alpha = c(.025, .975)
+boot.ci(boot.out = boot.obj, type = c("basic", "norm", "perc","bca"))
+```
+They are different because they are based on different assumptions, and they both are only used to approximate true value.
+
+## Exercise 7.6
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+library(bootstrap)
+# get data
+data(scor)
+pairs(scor)
+cor(scor)
+n <- nrow(scor)
+# get scores
+mec <- scor$mec # 1st test
+vec <- scor$vec # 2nd test
+alg <- scor$alg # 3 test
+ana <- scor$ana # 4 test
+sta <- scor$sta # 5 test
+# bootstrap
+B <- 10000
+boot_12 <- numeric(B)
+boot_34 <- numeric(B)
+boot_35 <- numeric(B)
+boot_45 <- numeric(B)
+for(b in 1:B) {
+    idx <- sample(1:n, size=n, replace=TRUE)
+    boot_12[b] <- cor(mec[idx], vec[idx])
+    boot_34[b] <- cor(alg[idx], ana[idx])
+    boot_35[b] <- cor(alg[idx], sta[idx])
+    boot_45[b] <- cor(ana[idx], sta[idx])
+}
+# get bootstrap estimates of the standard errors for each of the estimates
+rho_12 <- sd(boot_12)
+rho_34 <- sd(boot_34)
+rho_35 <- sd(boot_35)
+rho_45 <- sd(boot_45)
+(table <- cbind(rho_12, rho_34, rho_35, rho_45))
+```
+What's in the table are bootstrap estimates of the standard errors for each of the estimates: rho12, rho34, rho35, rho45.
+
+## Exercise 7.7
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+data(scor)
+scov <- cov(scor)
+eigen.val <- eigen(scov, only.values = TRUE)$values
+sort.ev <- sort(eigen.val, decreasing = TRUE)
+# get maximum likelihood estimator theta
+(theta <- sort.ev[1]/ sum(sort.ev))
+# bootstrap
+B <- 10000
+theta.b <- numeric(B)
+for (b in 1:B) {
+  i <- sample(1:n, size = n, replace = TRUE)
+  scor.b <- scor[i,]
+  scov.b <- cov(scor.b)
+  eigen.val.b <- eigen(scov.b, only.values = TRUE)$values
+  sort.ev.b <- sort(eigen.val.b, decreasing = TRUE)
+  theta.b[b] <- sort.ev.b[1]/ sum(sort.ev.b)
+}
+bias <- mean(theta.b) - theta
+se <- sd(theta.b)
+print(list(estimate=theta, bias = bias, se = se))
+```
+The sample estimate of θ is `r theta`, the bootstrap estimate of its bias is `r bias` and that of its se is `r se`.
+
+## Exercise 7.11
+```{r, eval=TRUE, echo=TRUE, include=TRUE}
+library(DAAG); 
+attach(ironslag)
+n <- length(magnetic) #in DAAG ironslag
+e1 <- e2 <- e3 <- e4 <- numeric(n*(n-1)) # 'leave two out' has n(n-1) combinations
+for (i in 1:n){
+  for (j in i:n){
+    if (i != j){
+      y=magnetic[c(-i,-j)]
+      x=chemical[c(-i,-j)]
+      
+      J1 <- lm(y ~ x)
+      yhat11 <- J1$coef[1] + J1$coef[2] * chemical[i]
+      yhat12 <- J1$coef[1] + J1$coef[2] * chemical[j]
+      e1[(i-1)*n+j] <- sqrt((magnetic[i] - yhat11)^2+(magnetic[j] - yhat12)^2)
+      
+      J2 <- lm(y ~ x + I(x^2))
+      yhat21 <- J2$coef[1] + J2$coef[2] * chemical[i] +
+      J2$coef[3] * chemical[i]^2
+      yhat22 <- J2$coef[1] + J2$coef[2] * chemical[j] +
+      J2$coef[3] * chemical[j]^2
+      e2[(i-1)*n+j] <- sqrt((magnetic[i] - yhat21)^2+(magnetic[j] - yhat22)^2)
+      
+      J3 <- lm(log(y) ~ x)
+      logyhat31 <- J3$coef[1] + J3$coef[2] * chemical[i]
+      logyhat32 <- J3$coef[1] + J3$coef[2] * chemical[j]
+      yhat31 <- exp(logyhat31)
+      yhat32 <- exp(logyhat32)
+      e3[(i-1)*n+j] <- sqrt((magnetic[i] - yhat31)^2+(magnetic[j] - yhat32)^2)
+      
+      J4 <- lm(log(y) ~ log(x))
+      logyhat41 <- J4$coef[1] + J4$coef[2] * log(chemical[i])
+      logyhat42 <- J4$coef[1] + J4$coef[2] * log(chemical[j])
+      yhat41 <- exp(logyhat41)
+      yhat42 <- exp(logyhat42)
+      e4[(i-1)*n+j] <- sqrt((magnetic[i] - yhat41)^2+(magnetic[j] - yhat42)^2)
+    }
+  }
+}
+# estimates for prediction error
+c(mean(e1^2), mean(e2^2), mean(e3^2), mean(e4^2))
+```
+According to the estimates for prediction error,the quadratic model is best fit for data. Then it's the exponential model, then the linear model. The Log-log model is the worst. 

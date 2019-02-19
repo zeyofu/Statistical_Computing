@@ -1,0 +1,430 @@
+---
+title: 'STAT 428: Homework 6: <br> Chapter 8 and 9 and Optimization'
+author: "Fu, Xingyu, xingyuf2 <br>"
+date: "Due Week 14 Saturday, December 1 by 11.59 PM on Compass"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+---------------------------------------
+
+Please refer to the [**detailed homework policy document**](https://compass2g.illinois.edu/bbcswebdav/pid-3348982-dt-content-rid-35374883_1/courses/stat_428_120188_166591/1_Info/Syllabus/homework_policy.html) on Course Page for information about homework formatting, submission, and grading. Additional policies:
+
+1. Whenever you are asked about an algorithm or a code implementing such, you have to either explain the algorithm clearly in steps or provide detailed documentation/comments on your R code explaining what you are doing. This is to ensure we fully understand what your code is trying to achieve since it can be hard to depict codes sometimes.
+
+2. When using an R code chunk in the RmD with {r}, please use {r,eval=TRUE, echo=TRUE, include=TRUE} instead so that your chunk and results show in the html. This is just to help us grade faster.
+
+3. When using external packages, please mention clearly what R packages you are using so that we can install those when running your codes. Furthermore, please call the package in your code using the "library" function so that your code shows no error when running.
+
+---------------------------------------
+
+## Exercise 1
+**Maximum Likelihood Estimator**
+In the exercise parts that follow, you must show derivation by hand(typed up in latex from within RMarkdown), include code and plots where appropriate. Also, do compare your results from code with those you got by hand.
+
+Suppose that $X$ is a discrete random variable with
+
+- $\mathbb{P}(X= 0) = \displaystyle\frac{1}{4} \theta$;
+- $\mathbb{P}(X= 1) = \displaystyle\frac{3}{4} \theta$;
+- $\mathbb{P}(X= 2) = \displaystyle\frac{1}{4} (1-\theta)$;
+- $\mathbb{P}(X= 3) = \displaystyle\frac{3}{4} (1-\theta)$;
+
+where $0 \le \theta \le 1$ is a parameter.  The following 10 independent observations were taken from such a distribution:  $(3,0,2,1,3,2,1,0,2,1)$.
+
+**(a)** What is the likelihood function $L(\theta$) for the sample $(3,0,2,1,3,2,1,0,2,1)$? 
+$$L(\theta) = [\mathbb{P}(X= 0)]^2 \cdot [\mathbb{P}(X= 1)]^3 \cdot [\mathbb{P}(X= 2)]^3 \cdot [\mathbb{P}(X= 3)]^2$$
+$$= [\displaystyle\frac{1}{4} \theta]^2 \cdot [\displaystyle\frac{3}{4} \theta]^3 \cdot [\displaystyle\frac{1}{4} (1-\theta)]^3 \cdot [\displaystyle\frac{3}{4} (1-\theta)]^2 $$
+$$=\frac{3^5}{4^{10}} \cdot \theta^{5}(1-\theta)^5$$
+**(b)** What is the log-likelihood function $l(\theta$) for the sample $(3,0,2,1,3,2,1,0,2,1)$?
+$$l(\theta) = log(L(\theta))= 5log(3) - 10log(4) + 5 log(\theta) + 5 log(1- \theta) \propto 5 log(\theta) + 5 log(1- \theta)$$ 
+**(c)** What is the maximum log-likelihood estimate of $\theta$? _(Hint: Recall the `optimize` function in R.)_
+maximum log-likelihood = $$\underset{\theta}{\operatorname{argmax}} l(\theta) = \underset{\theta}{\operatorname{argmin}} -l(\theta)$$
+let $$-l'(\theta) = 0$$,  
+Then $$-\frac{5}{\theta} + \frac{5}{1-\theta} = 0$$  
+So we get at maximum$$\theta = 0.5$$
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+l <- function(x) {
+  -5 * log(x) - 5 * log(1 - x)
+}
+theta_hat <- optimize(l, c(0, 1))
+theta_hat
+z <- seq(0, 1, length=2000)
+plot(z, l(z), type="l")
+```
+
+## Exercise 2
+**Maximum Likelihood Estimator in Logistic Regression**
+Suppose we have data in pairs $(x_{i},y_{i})$ for $i=1,2,...,25$.
+Conditional on $x_{i}$, $y_{i}$ is Bernoulli with success probability
+
+$$
+p_{i}=P[y_{i}=1|x_{i}]=exp(\beta_{0}+\beta_{1}x_{i})/(1+exp(\beta_{0}+\beta_{1}x_{i}))
+$$
+
+\noindent The aim is to compute the maximum likelihood estimate $\hat{{\bf{\beta}}}$ of the parameter vector ${\bf{\beta}}=(\beta_{0},\beta_{1})^{T}$.
+
+The log-likelihood is
+
+$$
+\ell({\bf{\beta}})=\sum_{i=1}^{n}[y_{i}log(p_{i})+(1-y_{i})log(1-p_{i})]
+$$
+
+
+The data are given below:
+
+        
+X values: 
+
+1.34 -1.38 -0.19 -0.44  1.90 -0.80  0.91 0.26  1.37 -1.62 -0.96  1.90 0.99  1.96 -1.57  1.51 -1.61 -1.02 -0.92 -1.87  1.73 -1.23 -1.24  0.22 1.42
+
+Y values:
+
+1 0 0 1 1 0 1 1 1 0 1 1 1 1 1 0 0 0 0 0 1 0 0 1 0
+
+To input the data in R, you can just copy the following in R.
+```{r, eval=FALSE, echo=TRUE}
+x = c(1.34, -1.38, -0.19, -0.44, 1.90, -0.80, 0.91, 0.26, 1.37, -1.62, -0.96, 1.90, 0.99, 1.96, -1.57, 1.51, -1.61, -1.02, -0.92, -1.87,  1.73, -1.23, -1.24,  0.22, 1.42)
+y = c(1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0)
+```
+ 
+**(a)** Use the function ``optim()``to compute $\hat{{\bf{\beta}}}$ using initial value (.25,.75).
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x = c(1.34, -1.38, -0.19, -0.44, 1.90, -0.80, 0.91, 0.26, 1.37, -1.62, -0.96, 1.90, 0.99, 1.96, -1.57, 1.51, -1.61, -1.02, -0.92, -1.87,  1.73, -1.23, -1.24,  0.22, 1.42)
+y = c(1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0)
+l <- function(beta) {
+  tmp <- exp(beta[1] + beta[2] * x)
+  p <- tmp / (1 + tmp)
+  return(sum(y * log(p) + (1 - y) * log(1 - p)))
+}
+
+betahat <- optim(par=c(0.25, 0.75), fn=l, control = list(fnscale=-1))$par
+betahat
+``` 
+**(b)** Again, starting with (.25,.75) find the next value when using the Newton-Raphson algorithm.
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+library(numDeriv)
+
+beta_init <- c(0.25, 0.75)
+gradient <- grad(l, beta_init)
+hess <- hessian(l, beta_init)
+(nextbeta <- beta_init - solve(hess) %*% gradient)
+(nextbeta <- array(nextbeta))
+```
+**(c)**  Assume that $\beta_{0}=0$, and plot the likelihood function $L(\beta_{1})$ as a function of $\beta_{1}$.
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+l <- function(beta_0, beta_1) {
+  tmp <- exp(beta_0 + beta_1 * x)
+  p <- tmp / (1 + tmp)
+  return(sum(y * log(p) + (1 - y) * log(1 - p)))
+}
+
+beta1 <- seq(-1, 3, length=1000)
+log_L <- sapply(beta1, function(x) {l(0, x)})
+plot(beta1, exp(log_L), type="l")
+```
+**(d)** Again, assume $\beta_{0}=0$ and compute $\hat{\beta}_{1}$ using ``uniroot()``, a grid search, and by the Newton-Raphson algorithm.
+To use Uniroot, we need to calculate the derivative of likelihood.  
+Let $p = \frac{u}{1 + u}$ where $u = exp(\beta_1 x)$  
+Then $\frac{dp}{d\beta_1} = \frac{ux}{(1 + u)^2}$
+So $\frac{dl}{d\beta_1} = \frac{dl}{dp} \frac{dp}{d\beta_1}$  
+$= \frac{y}{p} \frac{ux}{(1+u)^2} - \frac{1-y}{1-p} \frac{ux}{(1+u)^2}$ 
+$= \frac{(y + yT - T)x}{1 + T}$  
+$= (y - p)x$
+
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+# uniroot
+dl <- function(beta1) {
+  p <- exp(beta1 * x) / (1 + exp(beta1 * x))
+  grad <- sum(x * (y - p)) # gradient of l about beta1
+  return(grad)
+}
+(beta1_uni <- uniroot(dl, c(0, 2))$root)
+beta1_uni
+
+# Grid Search
+grid <- seq(0, 2, 0.01)
+res <- sapply(grid, function(beta) {l(0, beta)})
+(beta1_g <- grid[res == max(res)])
+
+#  the Newton-Raphson algorithm
+Newton <- function(f, theres, x0, N){
+  h = 1e-4
+  i = 1
+  p = numeric(N)
+  while(i < N+1){
+    x1 <- (x0 - (f(x0) / ((f(x0 + h) - f(x0)) / h)))
+    p[i] <- x1
+    if (abs(x1 - x0) < theres) break
+    x0 <- x1
+    i <- i + 1
+  }
+  return(x0)
+}
+(beta1_n <- Newton(dl, 1e-7, 0.8, 2000))
+```
+We get beta_1 using ``uniroot()``, grid search, and Newton-Raphson algorithm as `r beta1_uni`, `r beta1_g` and `r beta1_n`
+
+## Exercise 3-8
+
+Do the following problems from the book: 8.1, 9.2, 9.4, 9.7, 9.8, 9.10.
+
+###8.1
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+library(latticeExtra)
+
+# two-sample Cram´er-von Mises test
+cm <- function(x, y){
+  r <- 5000 # iteration
+  t <- vector("numeric", r)
+  n <- length(x)
+  m <- length(y)
+  n.v <- vector("numeric", n) 
+  n.v1 <- vector("numeric", n)
+  m.v <- vector("numeric", m)
+  m.v1 <- vector("numeric", m)
+  z <- c(x, y)
+  N <- length(z)
+  for (i in 1:n)
+    n.v[i] <- ( x[i] - i )**2
+  for (j in 1:m)
+    m.v[j] <- ( y[j] - j )**2
+  
+  # Test statistic for original dataset
+  t_orig <- ( (n * sum(n.v) + m * sum(m.v)) / (m * n * N) ) - (4 * m * n - 1) / (6 * N)
+  
+  # Calculate test statistic for each permautation samples
+  for (k in 1:r) { 
+    w <- sample(N, size = n, replace = FALSE)
+    x1 <- sort( z[w] )
+    y1 <- sort( z[-w] )
+    for (i in 1:n) { 
+      n.v1[i] <- ( x1[i] - i )**2 
+    }
+    for (j in 1:m) { 
+      m.v1[j] <- ( y1[j] - j )**2 
+    }
+    t[k] <- ( (n * sum(n.v1) + m * sum(m.v1)) / (m * n * N) ) - (4 * m * n - 1) / (6 * N)
+  }
+  
+  p <- mean( c(t_orig, t) >= t_orig )
+  result = list("t_orig"=t_orig,"t"=t,"p"=p)
+    return(result)
+}
+
+## plot
+histplot <- function(t_orig,t){
+  histogram(c(t_orig, t) , type = "density" , xlab = "Cram´er-von Mises test", ylab = list(rot = 0)
+            , panel = function(...){
+                panel.histogram(...)
+                panel.abline(v = t_orig, col = 2, lwd = 2)
+              }
+            )
+}
+
+data("chickwts")
+# 8.1
+x <- with(chickwts, sort(as.vector(weight[feed == "soybean"])))
+y <- with(chickwts, sort(as.vector(weight[feed == "linseed"])))
+cvm_8.1 <- cm(x, y)
+print(histplot(cvm_8.1$t_orig,cvm_8.1$t), position = c(0, 0, 0.5, 1))
+cvm_8.1$p
+
+# 8.2
+x <- with(chickwts, sort(as.vector(weight[feed == "sunflower"])))
+y <- with(chickwts, sort(as.vector(weight[feed == "linseed"])))
+cvm_8.2 <- cm(x, y)
+print(histplot(cvm_8.2$t_orig,cvm_8.2$t), position = c(0, 0, 1, 1))
+cvm_8.2$p
+```
+
+###9.2
+```{r, echo=TRUE, eval=TRUE}
+f <- function(x, sigma){                      # Rayleigh density
+  if (any(x < 0)) return (0)
+  stopifnot(sigma > 0)
+  return((x / sigma^2) * exp(-x^2 / (2*sigma^2)))
+}
+m1 <- 10000
+sigma <- 4
+x <- numeric(m1)
+x[1] <- rgamma(1, shape = 1, rate = 1)        # gamma
+k1 <- 0
+u <- runif(m1)
+for (i in 2:m1) {
+  xt <- x[i-1]
+  y <- rgamma(1, shape = xt, rate = 1)        # chi square distribution
+  num <- f(y, sigma) * dgamma(xt, shape = y, rate = 1)
+  den <- f(xt, sigma) * dgamma(y, shape = xt, rate = 1)
+  if (u[i] <= num/den) 
+    x[i] <- y 
+  else {
+    x[i] <- xt
+    k1 <- k1+1   #y is rejected
+  }
+}
+index <- 5000:5500
+y1 <- x[index]
+plot(index, y1, type="l", main="", ylab="x")
+```
+
+Approximately ``r k1/m1*100``% of the candidate points are rejected, so the chain is more efficient than simulation using chi square distribution. 
+
+###9.4
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+Lden=function(x){
+  return (1/2*exp(-abs(x)))
+}
+
+rw.Metropolis <- function(sigma, x0, N) {
+  x <- numeric(N)
+  x[1] <- x0
+  u <- runif(N)
+  k <- 0
+  for (i in 2:N) {
+    y <- rnorm(1, x[i-1], sigma)
+    if (u[i] <= (Lden(y) / Lden((x[i-1])))){
+      x[i] <- y
+      k=k+1
+    }
+    else {
+      x[i] <- x[i-1]
+    }
+  }
+  return(list(x=x, acrate=k/N))
+}
+
+N <- 2000
+sigma <- c(0.05, 0.5, 2, 16)
+x0 <- 25 # starting
+rw1 <- rw.Metropolis(sigma[1], x0, N)
+rw2 <- rw.Metropolis(sigma[2], x0, N)
+rw3 <- rw.Metropolis(sigma[3], x0, N)
+rw4 <- rw.Metropolis(sigma[4], x0, N)
+# number of rejected candidate points
+print(c(rw1$acrate, rw2$acrate, rw3$acrate, rw4$acrate))
+
+# plot of chain
+plot(rw1$x,type='l',ylab='Chain',xlab='Iterations',main='sigma=0.05')
+plot(rw2$x,type='l',ylab='Chain',xlab='Iterations',main='sigma=0.5')
+plot(rw3$x,type='l',ylab='Chain',xlab='Iterations',main='sigma=2')
+plot(rw4$x,type='l',ylab='Chain',xlab='Iterations',main='sigma=16')
+```
+
+When stargard deviation gets larger, the acceptance rate is gets lower. 
+Acceptance rates of each chain are proportional to sigma value. 'sigma=2' seems best here.
+
+###9.7
+To generate (X,Y), we generate X and Y from X|Y and Y|X iteratively based on gibbs sampling.
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+x1 = 10   # inital point
+burn = 100 # burn-in period
+N = 2000 # length
+x = numeric(N)
+y = numeric(N)
+x[1] = x1
+y[1] = rnorm(1,0.9*x[1],sqrt(1-0.9^2))
+for (i in 2:N){
+  x[i] = rnorm(1,0.9*y[i-1],sqrt(1-0.9^2))
+  y[i] = rnorm(1,0.9*x[i],sqrt(1-0.9^2))
+}
+xsample=x[(burn+1):N]
+ysample=y[(burn+1):N]
+# plot
+plot(xsample,type='l',ylab='Chain',xlab='Iterations',main='x')
+plot(ysample,type='l',ylab='Chain',xlab='Iterations',main='y')
+
+# fit sample
+modelfit=lm(ysample~xsample)
+res=modelfit$residuals
+plot(modelfit)
+```
+From the plots, residuals can indicate normality and constant variance in the regression model.
+
+###9.8
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+gibbs.sim <- function(n,a,b){
+  N <- 5000                           #iterations
+  burn <- 1000
+  X <- matrix(0, N, 2)
+  # generate the chain
+  X[1, ] <- c(floor(n/2), a/(a+b))
+  for (i in 2:N){
+    x2 <- X[i-1, 2]
+    X[i, 1] <- rbinom(1, n, x2)
+    x1 <- X[i, 1]
+    X[i, 2] <- rbeta(1, x1+a, n-x1+b)
+  }
+  b <- burn + 1
+  sample <- X[b:N, ]
+  return(sample)
+}
+```
+
+###9.10
+```{r,eval=TRUE, echo=TRUE, include=TRUE}
+#Defining the function to calculate the G-R statistic
+Gelman.Rubin <- function(psi){
+  # psi[i,j] is the statistic psi(X[i,1:j])
+  # for chain in i-th row of X
+  psi <- as.matrix(psi)
+  n <- ncol(psi)
+  k <- nrow(psi)
+  psi.means <- rowMeans(psi)     #row means
+  B <- n * var(psi.means)        #between variance est.
+  psi.w <- apply(psi, 1, "var")  #within variances
+  W <- mean(psi.w)               #within est.
+  v.hat <- W*(n-1)/n + (B/n)     #upper variance est.
+  r.hat <- v.hat / W             #G-R statistic
+  return(r.hat)
+}
+
+f <- function(x, sigma){         # evaluate the Rayleigh density
+  if (any(x < 0)) return (0)
+  stopifnot(sigma > 0)
+  return((x / sigma^2) * exp(-x^2 / (2*sigma^2)))
+}
+
+k <- 4                           # number chains
+sigma <- 4
+x <- as.matrix(c(0.01, 2, 4, 6))
+ral.chain <- function(x){
+  xi <- numeric(nrow(x))
+  for(i in 1:length(xi)){
+    xt <- x[i, ncol(x)]
+    y <- rchisq(1, df = xt)      # Using chi square distribution
+    num <- f(y, sigma) * dchisq(xt, df = y)
+    den <- f(xt, sigma) * dchisq(y, df = xt)
+    u <- runif(1)
+    if (u <= num/den) xi[i] <- y else{
+      xi[i] <- xt                #y is rejected
+    }
+  }
+  return(cbind(x,xi))
+}
+r.hat = 10
+while(r.hat >= 1.2){
+  x <- ral.chain(x)
+  psi <- t(apply(x, 1, cumsum))
+  for (i in 1:nrow(psi))
+    psi[i,] <- psi[i,] / (1:ncol(psi))
+  r.hat <- Gelman.Rubin(psi)
+}
+b <- ncol(x)
+
+# check convergence by the G-R method
+library(coda)
+x.mcmc <- mcmc.list(as.mcmc(x[1,]),as.mcmc(x[2,]),as.mcmc(x[3,]),as.mcmc(x[4,]))
+geweke.diag(x.mcmc)
+geweke.plot(x.mcmc)
+```
+
+Our chains converge.
+

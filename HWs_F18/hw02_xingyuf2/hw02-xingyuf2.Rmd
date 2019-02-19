@@ -1,0 +1,331 @@
+---
+title: 'STAT 428: Homework 2: <br> Random Number Generation and Sampling'
+author: "Fu, Xingyu, xingyuf2 <br>Collaborated with: Zhang, Jieyu, jieyuz2"
+date: "Due Week 4 Saturday, September 22 by 11.59 PM on Compass"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+```
+---------------------------------------
+
+Please refer to the [**detailed homework policy document**](https://compass2g.illinois.edu/bbcswebdav/pid-3348982-dt-content-rid-35374883_1/courses/stat_428_120188_166591/1_Info/Syllabus/homework_policy.html) on Course Page for information about homework formatting, submission, and grading. 
+
+---------------------------------------
+
+## Solution 1
+**R Syntax and class-typing.**
+
+**(a)** For each of the following commands, either explain why they should be errors, or explain the non-erroneous result.
+
+```
+vector1 <- c("3", "3", "8", "2", "4")
+vector1*2
+sort(vector1)
+sum(vector1)
+```
+1st line: Non-erroneous. The line assigns a vector of characters to variable: vector1.<br>
+2nd line: Error. Each element in vector1 is of character type which cannot operate numeric argument, and cannot be multiplied by 2. <br>
+3nd line: Non-erroneous. It sorts vector1 in lexicographical order with result as: "2" "3" "3" "4" "8".<br>
+4rd line: Error. Each element in vector1 is of character type which cannot operate numeric argument, and cannot be added together. <br>
+
+**(b)** For the next series of commands, either explain their results, or why they should produce errors.
+
+```
+vector2 <- c("5",7,12)
+vector2[2] + vector2[3]
+
+dataframe3 <- data.frame(z1=5,z2="cat",z3=1)
+dataframe3[1,1] + dataframe3[1,3]
+
+list4 <- list(z1="100", z2=25, z3="98", z4=126)
+list4[[1]]+list4[[2]]
+list4[[2]]+list4[[4]]
+list4[2]+list4[4]
+list4[2]$z2 + list4[4]$z4
+
+1st line: Non-erroneous. The line assigns a vector of characters to variable: vector2.<br>
+2nd line: Error. Each element in vector2 is of character type which cannot operate numeric argument, and cannot be added together. <br>
+3nd line: Non-erroneous. It creates a data frame object that has elements of an int, a character, and an int.  <br>
+4th line: Non-erroneous. It adds the first and third element (5 and 1) in the data frame object, and thus has result as 6. <br>
+5th line: Non-erroneous. It assigns a list that has 4 elements of different types to the variable: list4. <br>
+6th line: Error. "100" is character type and 25 is int type. So they cannot be added together.   <br>
+7th line: Non-erroneous. This line adds int values 25 and 126 and has result 151. <br>
+8th line: Error. `list[2]` and `list[4]` are lists, so they cannot be added together numerically. <br>
+9th line: Non-erroneous. It addes up int values in lists `list[2]` and `list[4]`and has result as 151. <br>
+
+## Solution 2
+**Working with functions and operators.**
+    
+**(a)** The colon operator will create a sequence of integers in order. It is a special case of the function `seq()`. Using the help command `?seq` to learn about the function, design an expression that will give you the sequence of numbers from 1 to 10000 in increments of 203. Design another that will give you a sequence between 1 and 10000 that is exactly 18 numbers in length.
+```{r, echo=T}
+seq(from = 1, to = 10000, by = 203)
+seq(from = 1, to = 10000, length.out = 18)
+```
+
+**(b)** The function `rep()` repeats a vector some number of times. Explain the difference between `rep(1:4, times=4)` and `rep(1:4, each=4)`.
+The first prints 1 to 4 for 4 times It has output 1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4 <br>
+The second prints from 1 to 4, for each number it prints 4 times. It has output 1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4<br>
+
+## Solution 3
+Writing R functions.
+Write an `R` function that accepts a vector as an argument and returns the standard deviation of that vector. You may not use the pre-existing functions sd(), var(), or anything similar.
+```{r, echo=T}
+# a is a input vector, the function will return the standard deviation of it
+sd <- function(a) {
+  sd = sqrt(sum((a-mean(a))^2/(length(a)-1)))
+  return(sd)
+}
+
+```
+
+## Solution 4
+
+**Simulating Beta(2, 4) Random Variables: Which method is better?**
+
+In this exercise, you will simulate Beta(2,4) random variables with target density
+\[
+f(x) \propto x \; (1-x)^{3}.
+\]
+using the Accept/Reject Algorithm with two different instrumental densities.
+
+- **[Method I]** Use uniform RV's with instrumental density
+   \[
+   g_{1}(x) = 1,\quad 0 < x < 1.
+   \]
+   
+    - you may use $M \approx 0.1055$.
+    - to simulate from $g_{1}$ use the command `x <- runif(1)`.
+
+- **[Method II]** Use the average of two uniform RV's with instrumental density
+   \[
+   g_{2}(x) = 2 - |4x - 2|,\quad 0 < x <1.
+   \]
+   
+    - you may use $M \approx 0.2499$.
+    - the `R` function for absolute value is `abs`.
+    - to simulate from $g_{2}$ use the command `x <- mean(runif(2))`.
+
+
+- **[Question]**  Which method is better? Answer this by responding to the following parts.
+
+
+- **(a)** Write a program that simulates 10,000 Beta(2,4) random variables using both methods.
+- **(b)** Compare the acceptance rates and decide which one is the better algorithm.
+- **(c)** Is it correct to use theoretical acceptance rate $\frac{1}{M}$. Why or why not?
+- **(c)** Graph histograms of your results.
+- **(d)** Summarizes your findings.
+
+
+- **Hints:**
+
+    - Modify code for simulating Normals from Cauchy that was done in class. 
+    - It may help to write two separate programs for each method.
+
+- **(a)** 
+```{r, echo=T}
+
+algorithm <- function(n){
+  M <- 0.1055
+  accept <- 0; num <- 0
+  z <- rep(0, times = n)
+  while(accept < n){
+      x <- runif(1)
+      f <- x * (1 - x)^3
+      u <- runif(1)
+      g <- 1
+      if (u <= f/M/g){
+        accept <- accept + 1
+        z[accept] <- x
+      }
+      num <- num + 1
+    }
+list(z = z, accept = n/num)
+}
+method1 <- algorithm(10000)
+method1$accept
+```
+
+```{r, echo=T}
+algorithm <- function(n){
+  M <- 0.2499
+  accept <- 0; num <- 0
+  z <- rep(0, times = n)
+  while(accept < n){
+      x <- mean(runif(2))
+      f <- x * (1 - x)^3
+      u <- runif(1)
+      g <- 2 - abs(4 * x - 2)
+      if (u <= f/M/g){
+        accept <- accept + 1
+        z[accept] <- x
+      }
+      num <- num + 1
+    }
+list(z = z, accept = n/num)
+}
+method2 <- algorithm(10000)
+method2$accept
+```
+
+- **(b)** 
+The first one has higher acceptance rate. The first one is better.  
+
+- **(c)** 
+No. Since f(x) is only proportional to $x(1 - x)^3$, We could not have the constant and get upper bound as $M'$ , then the $P(acceptance)$ is no longer $\frac{1}{M'}$.  
+
+- **(d)**
+
+```{r, echo=T}
+hist(method1$z, freq = FALSE, breaks = 30, main = "First Algorithm Result", xlab = "Accepted Samples")
+lines(density(method1$z))
+
+hist(method2$z, freq = FALSE, breaks = 30, main = "Second Algorithm Result", xlab = "Accepted Samples")
+lines(density(method2$z))
+```
+
+- **(e)** Summarizes your findings.
+I think both algorithms simulates the density well, though they may differ in acceptance rate. 
+
+## Solution 5
+**Estimation of $\pi$.** $\pi$ is an irrational number between 3 and 4. In `R`, you can get an approximate value of `pi` directly when you enter `pi`. We will now estimate this value ourselves with simulation and compare it with the already available approximation.
+
+- **(a)** Simulate 10000 pairs of random variables $(X_1, X_2)$, both from $Unif(-1,1)$. *Hint: Use the function `runif`. You can generate $X_1$ and $X_2$ separately.*
+- **(b)** Find the number of times that $(X_1^2 + X_2^2) \leq 1$ for your sample. Call this number `n`.
+- **(c)** Estimate $\pi$ by the number $4n/10000$. Check how close it is to the value given by `pi` in `R`.
+- **(d)** Repeat this process 100 times to get a vector of estimates $\tilde{\pi}$.
+- **(e)** Estimate the error in our approximation by calculating standard deviation of the vector $\tilde{\pi}$ divided by 10.
+
+- **(a)**
+```{r echo=T}
+X1=runif(10000,-1,1)
+X2=runif(10000,-1,1)
+pairs <- data.frame(X1, X2)
+```
+
+- **(b)**
+```{r echo=T}
+n <- dim(subset(pairs, (X1^2+X2^2) <= 1))[1]
+n
+```
+
+- **(c)**
+```{r echo=T}
+estimate=4*n/10000
+estimate
+abs(pi - estimate)
+```
+
+- **(d)**
+```{r, echo=T}
+
+estimates <- rep(0, 100)
+for (i in 1 : 100) {
+  X1 <- runif(10000, -1, 1)
+  X2 <- runif(10000, -1, 1)
+  pairs <- data.frame(X1, X2)
+  n <- dim(subset(pairs, (X1^2+X2^2) <= 1))[1]
+  estimates[i] <- 4*n/10000
+}
+estimates
+```
+
+- **(e)**
+```{r, echo=T}
+error = sd(estimates) / 10
+error
+```
+
+## Solution 6
+Suppose we want to generate random samples from a distribution with the following probability density function
+$$
+f(x) = \begin{cases}
+x,    &0\leq x \leq 1,\\
+2-x,  &1<x \leq 2.
+\end{cases}
+$$
+Derive the probability inverse transformation $F^{-1}(U)$ and use the inverse transform method to simulate 1000 random samples from this distribution. Graph the density histogram of the sample.
+
+$$ 
+F^{-1}(u) = \begin{cases}
+\sqrt{2u},          & 0 \leq u \leq \frac{1}{2} \\
+2 - \sqrt{2 - 2u},  & \frac{1}{2} < u \leq 1
+\end{cases}
+$$
+
+``` {r, echo = T}
+inverse_F = function(y){
+    return(ifelse(y <= 1/2, sqrt(2 * y), 2 - sqrt(2 - 2*y)))
+}
+
+us = runif(1000)
+samples = sapply(us, inverse_F)
+```
+
+``` {r, echo = T}
+hist(samples, freq = FALSE, breaks = 30, main = 'Density histogram of the samples', xlab = "x")
+y <- seq(0, 2, by = 0.01)
+lines(y, sapply(y, function(x) ifelse(x <= 1, x, 2-x)))
+```
+
+## Solution 7-10
+Do the following exercises from the book: 3.2, 3.3, 3.7, 3.9
+
+## Solution 7 (3.2)
+```{r, echo=T}
+u <- runif(1000)
+f <- log(2 * u) * (u <= 0.5) - log(2 * (1 - u)) * (u > 0.5)
+
+hist(f, probability = T, xlim=c(-5,5), ylim=c(0,0.5), breaks = 40, main="Density histogram of the samples", xlab = "x")
+y <- seq(-5, 5, 0.01)
+lines(y, 0.5 * exp(-abs(y)))
+```
+
+## Solution 8 (3.3)
+```{r, echo=T}
+u <- runif(1000)
+f <- 2/sqrt(1-u)
+hist(f, probability = T, breaks=200, xlim=c(2,8), ylim=c(0,1), main="Density histogram of the samples", xlab = "x")
+y <- seq(2, 8, 0.01)
+lines(y, 8 / (y^3))
+```
+
+## Solution 9 (3.7)
+
+```{r, echo=T}
+accept <- 0
+num <- 0
+f <- rep(0, 100)
+while (accept < 1000){
+  u <- runif(1)
+  num <- num + 1
+  x <- sqrt(runif(1))
+  if (x * (1-x) > u) {
+    accept <- accept + 1
+    f[accept] <- x
+  }
+}
+hist(f, probability = T, main="Density histogram of the samples", xlab = "x", xlim=c(0,1), ylim=c(0,2), breaks = 30)
+y <- seq(0,1,0.01)
+lines(y, 12*(y^2)*(1-y))
+```
+
+
+## Solution 10 (3.9)
+
+``` {r, echo = T}
+u1 = runif(5000, -1, 1)
+u2 = runif(5000, -1, 1)
+u3 = runif(5000, -1, 1)
+data = ifelse(abs(u3) >= abs(u2) & abs(u3) >= abs(u1), u2, u3)
+hist(data, freq = F, main="Density histogram of the samples", xlab = "x", breaks = seq(-1, 1, by = 0.05))
+y = seq(-1, 1, by = 0.01)
+lines(y, 3/4 * (1 - y^2))
+```
